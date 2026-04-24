@@ -5,6 +5,8 @@ build/
 dist/
 wheels/
 *.egg-info
+try.py
+highscore.txt
 
 # Virtual environments
 .venv
