@@ -13,6 +13,7 @@ run = True
 # Pipes
 pipes = []
 pipe_time = 1200
+pipe_speed = 5
 spawn_pipe = pygame.USEREVENT
 pygame.time.set_timer(spawn_pipe, pipe_time)
 pipe_height = [300, 400, 500]
@@ -32,6 +33,7 @@ game_over = False
 fade_alpha = 0
 fade_speed = 5
 text_alpha = 0
+high_score_text_alpha = 0
 
 # Fonts
 font = pygame.font.Font(None, 50)
@@ -84,6 +86,8 @@ while run:
                     bird_rect.center = (100, 350)
                     bird_velocity = 0
                     score = 0
+                    pipe_speed = 5
+                    pygame.time.set_timer(spawn_pipe, 1200)
 
         if event.type == spawn_pipe:
             random_pipe_height = random.choice(pipe_height)
@@ -103,7 +107,7 @@ while run:
             game_over = True
 
         for pipe in pipes:
-            pipe.centerx -= 5
+            pipe.centerx -= pipe_speed
 
         # Score when bird passes pipe
         for pipe in pipes:
@@ -112,6 +116,14 @@ while run:
                 if score > high_score:
                     high_score = score
                     save_high_score()
+                
+                # Increase difficulty every 5 points
+                if score % 5 == 0:
+                    # Speed up pipes (max 10)
+                    pipe_speed = min(10, 5 + score // 5)
+                    # Spawn pipes faster (min 800ms)
+                    new_interval = max(800, 1200 - score * 20)
+                    pygame.time.set_timer(spawn_pipe, new_interval)
 
         # Remove off-screen pipes
         for pipe in pipes[:]:
@@ -142,9 +154,19 @@ while run:
             text_rect = game_over_text.get_rect(center=(screen_width // 2, screen_height // 2))
             
             screen.blit(game_over_text, text_rect)
+            
+            # Fade in high score after "YOU DIED" appears
+            if text_alpha >= 255:
+                high_score_text_alpha = min(255, high_score_text_alpha + fade_speed)
+                
+                hs_text = small_font.render(f"Best: {high_score}", True, (80, 80, 80))
+                hs_text.set_alpha(high_score_text_alpha)
+                hs_rect = hs_text.get_rect(center=(screen_width // 2, screen_height // 2 + 60))
+                screen.blit(hs_text, hs_rect)
     else:
         fade_alpha = max(0, fade_alpha - fade_speed)
         text_alpha = max(0, text_alpha - fade_speed)
+        high_score_text_alpha = max(0, high_score_text_alpha - fade_speed)
         
         if fade_alpha > 0:
             fade_surface = pygame.Surface((screen_width, screen_height))
@@ -156,11 +178,10 @@ while run:
         draw_bird()
         draw_pipes(pipes)
         
-        # Draw score
-        score_text = small_font.render(f"Score: {score}", True, (0, 0, 0))
-        high_score_text = small_font.render(f"Best: {high_score}", True, (0, 0, 0))
-        screen.blit(score_text, (10, 10))
-        screen.blit(high_score_text, (10, 40))
+        # Draw score centered at top
+        score_text = font.render(str(score), True, (0, 0, 0))
+        score_rect = score_text.get_rect(center=(screen_width // 2, 50))
+        screen.blit(score_text, score_rect)
     pygame.display.update()
     clock.tick(60)
 pygame.quit()
